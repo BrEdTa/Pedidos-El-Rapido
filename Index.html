@@ -1,0 +1,332 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>Pedido confirmado</title>
+
+  <style>
+    :root{
+      --bg:#000000;          /* Fondo negro */
+      --text:#ffffff;        /* Texto blanco */
+      --muted:#ffffff;
+      --panel: rgba(255,255,255,.08);
+      --border: rgba(140,140,140,.3);
+      --btn: rgba(140,140,140,.2);
+      --btn2: rgba(140,140,140,.3);
+      --radius: 18px;
+    }
+
+    *{ box-sizing:border-box; }
+
+    body{
+      margin:0;
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height:100vh;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      padding:18px;
+      box-shadow: inset 0 0 100px rgba(100,100,100,.1);
+    }
+
+    .app{
+      width:min(980px, 100%);
+    }
+
+    /* Barra superior */
+    .toolbar{
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      gap:10px;
+      margin-bottom:12px;
+      flex-wrap:wrap;
+    }
+
+    .pill{
+      font-size:12px;
+      padding:8px 10px;
+      border-radius:999px;
+      border:1px solid var(--border);
+      background: var(--panel);
+      color: var(--text);
+    }
+
+    .btn{
+      border:1px solid var(--border);
+      background: var(--btn);
+      color: var(--text);
+      padding:10px 12px;
+      border-radius:14px;
+      cursor:pointer;
+      font-weight:700;
+      font-size:13px;
+      transition:.15s;
+    }
+    .btn:hover{ background: var(--btn2); transform: translateY(-1px); }
+    .btn:active{ transform: translateY(0px); }
+
+    /* Tarjeta (la "nota" que capturas) */
+    .card{
+      border-radius: var(--radius);
+      border:1px solid var(--border);
+      background: rgba(40,40,40,.6);
+      overflow:hidden;
+      box-shadow: 0 8px 32px rgba(0,0,0,.5),
+                  0 4px 16px rgba(100,100,100,.2);
+    }
+
+    .note{
+      padding:28px 18px 22px;
+      text-align:center;
+    }
+
+    .logoWrap{
+      width:200px;
+      height:90px;
+      border-radius:18px;
+      margin:0 auto 14px;
+      overflow:hidden;
+      background: #000000;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      box-shadow: 0 6px 20px rgba(0, 0, 0, 0.5),
+                  0 3px 10px rgba(120, 120, 120, 0.25),
+                  inset 0 1px 2px rgba(255, 255, 255, 0.1),
+                  inset 0 -1px 2px rgba(0, 0, 0, 0.3);
+      border: 1px solid rgba(140, 140, 140, 0.4);
+      padding: 10px;
+    }
+    .logoWrap img{
+      width:100%;
+      height:100%;
+      object-fit:contain;
+      display:block;
+    }
+
+    .storeName{
+      font-weight:900;
+      letter-spacing:.2px;
+      margin:0 0 14px;
+      font-size:18px;
+    }
+
+    .title{
+      margin:0 0 18px;
+      font-size:clamp(34px, 6vw, 62px);
+      line-height:1.05;
+      font-weight:900;
+      letter-spacing:-.5px;
+    }
+
+    .subtitle{
+      font-size:clamp(18px, 2.4vw, 28px);
+      font-weight:800;
+      margin:0 0 10px;
+    }
+
+    .msg{
+      max-width: 820px;
+      margin: 0 auto;
+      font-size:clamp(16px, 2.1vw, 26px);
+      line-height:1.35;
+      font-weight:650;
+      color: var(--muted);
+    }
+
+    .msg b{ font-weight:900; }
+
+    /* Panel de edición */
+    .editor{
+      border-top:1px solid var(--border);
+      background: rgba(30,30,30,.8);
+      padding:14px;
+    }
+
+    .grid{
+      display:grid;
+      grid-template-columns: 1fr;
+      gap:10px;
+    }
+
+    .row2{
+      display:grid;
+      grid-template-columns: 1fr 1fr;
+      gap:10px;
+    }
+
+    label{
+      display:block;
+      font-size:12px;
+      font-weight:800;
+      margin:0 0 6px;
+      color: rgba(255,255,255,.9);
+    }
+
+    input, textarea{
+      width:100%;
+      padding:10px 12px;
+      border-radius:14px;
+      border:1px solid var(--border);
+      background: rgba(60,60,60,.8);
+      color: var(--text);
+      font-size:14px;
+      outline:none;
+    }
+    input:focus, textarea:focus{
+      border-color: rgba(180,180,180,.5);
+      background: rgba(70,70,70,.9);
+    }
+
+    textarea{
+      min-height:90px;
+      resize:vertical;
+      line-height:1.35;
+    }
+
+    @media (max-width:520px){
+      .row2{ grid-template-columns:1fr; }
+    }
+
+    /* Modo captura: oculta toolbar + editor y deja solo la nota */
+    body.capture{
+      padding:0;
+    }
+    body.capture .toolbar,
+    body.capture .editor{
+      display:none !important;
+    }
+    body.capture .app{
+      width:100%;
+      max-width:none;
+    }
+    body.capture .card{
+      border-radius:0;
+      border:none;
+      background: transparent;
+      box-shadow: none;
+    }
+    body.capture .note{
+      padding:34px 16px 28px;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="app">
+    <div class="toolbar">
+      <div style="display:flex; gap:10px; flex-wrap:wrap;">
+        <span class="pill">Vista lista para screenshot</span>
+        <span class="pill">Tip: activa “Modo captura”</span>
+      </div>
+      <button class="btn" id="toggleCapture">Modo captura</button>
+    </div>
+
+    <div class="card">
+      <div class="note" id="note">
+        <div class="logoWrap" title="Auto Partes El Rápido">
+          <img src="logo.png.jpeg" alt="Auto Partes El Rápido" 
+               onerror="this.style.display='none'; this.parentElement.innerHTML='<span style=\'color:#fff; font-size:12px;\'>Logo no encontrado<br>Agrega logo.png</span>';" />
+        </div>
+
+        <div class="storeName" id="storeNamePreview">Tu Tienda</div>
+
+        <h1 class="title" id="titlePreview">Pedido confirmado</h1>
+
+        <div class="msg" id="msgPreview">
+          Tu pedido ya está en proceso. Tiempo estimado de entrega: <b>6 a 7 días hábiles</b>.<br>
+          ¡Gracias por comprar y confiar en nosotros!
+        </div>
+      </div>
+
+      <div class="editor">
+        <div class="grid">
+          <div class="row2">
+            <div>
+              <label>Nombre de la tienda</label>
+              <input id="storeInput" value="Tu Tienda" />
+            </div>
+            <div>
+              <label>Título</label>
+              <input id="titleInput" value="Pedido confirmado" />
+            </div>
+          </div>
+
+          <div>
+            <label>Texto (editable)</label>
+            <textarea id="msgInput">Tu pedido ya está en proceso. Tiempo estimado de entrega: 6 a 7 días hábiles.
+¡Gracias por comprar y confiar en nosotros!</textarea>
+          </div>
+
+          <div class="row2">
+            <button class="btn" type="button" id="resetBtn">Restablecer</button>
+            <button class="btn" type="button" id="copyBtn">Copiar texto</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const storeNamePreview = document.getElementById('storeNamePreview');
+    const titlePreview = document.getElementById('titlePreview');
+    const msgPreview = document.getElementById('msgPreview');
+
+    const storeInput = document.getElementById('storeInput');
+    const titleInput = document.getElementById('titleInput');
+    const msgInput = document.getElementById('msgInput');
+
+    function escapeHtml(s){
+      return s.replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;');
+    }
+
+    function sync(){
+      storeNamePreview.textContent = (storeInput.value || '').trim() || 'Tu Tienda';
+      titlePreview.textContent = (titleInput.value || '').trim() || 'Pedido confirmado';
+
+      const raw = msgInput.value || '';
+      // Resalta automáticamente "6 a 7 días hábiles" si está presente
+      const safe = escapeHtml(raw).replaceAll('\n','<br>');
+      const highlighted = safe.replaceAll(
+        '6 a 7 días hábiles',
+        '<b>6 a 7 días hábiles</b>'
+      );
+      msgPreview.innerHTML = highlighted;
+    }
+
+    [storeInput, titleInput, msgInput].forEach(el => el.addEventListener('input', sync));
+    sync();
+
+    // Modo captura
+    const toggleCapture = document.getElementById('toggleCapture');
+    toggleCapture.addEventListener('click', () => {
+      document.body.classList.toggle('capture');
+      toggleCapture.textContent = document.body.classList.contains('capture')
+        ? 'Salir captura'
+        : 'Modo captura';
+    });
+
+    // Restablecer
+    document.getElementById('resetBtn').addEventListener('click', () => {
+      storeInput.value = 'Tu Tienda';
+      titleInput.value = 'Pedido confirmado';
+      msgInput.value = 'Tu pedido ya está en proceso. Tiempo estimado de entrega: 6 a 7 días hábiles.\n¡Gracias por comprar y confiar en nosotros!';
+      sync();
+    });
+
+    // Copiar
+    document.getElementById('copyBtn').addEventListener('click', async () => {
+      try{
+        await navigator.clipboard.writeText(msgInput.value);
+        alert('Texto copiado ✅');
+      }catch(e){
+        alert('No se pudo copiar. Copia manualmente 🙏');
+      }
+    });
+  </script>
+</body>
+</html>
