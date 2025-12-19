@@ -381,6 +381,42 @@
       return s.replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;');
     }
 
+    // Función para calcular fechas de entrega (días hábiles)
+    function calcularFechasEntrega() {
+      const hoy = new Date();
+      const diasMin = 6;
+      const diasMax = 7;
+
+      function agregarDiasHabiles(fecha, dias) {
+        let fechaResultado = new Date(fecha);
+        let diasAgregados = 0;
+        
+        while (diasAgregados < dias) {
+          fechaResultado.setDate(fechaResultado.getDate() + 1);
+          const diaSemana = fechaResultado.getDay();
+          // 0 = domingo, 6 = sábado
+          if (diaSemana !== 0 && diaSemana !== 6) {
+            diasAgregados++;
+          }
+        }
+        return fechaResultado;
+      }
+
+      const fechaMin = agregarDiasHabiles(hoy, diasMin);
+      const fechaMax = agregarDiasHabiles(hoy, diasMax);
+
+      function formatearFecha(fecha) {
+        const meses = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio',
+                      'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
+        return fecha.getDate() + ' de ' + meses[fecha.getMonth()];
+      }
+
+      const fechaMinStr = formatearFecha(fechaMin);
+      const fechaMaxStr = formatearFecha(fechaMax);
+
+      return { fechaMin: fechaMinStr, fechaMax: fechaMaxStr };
+    }
+
     function sync(){
       const orderRaw = msgInput.value || '';
 
@@ -390,10 +426,15 @@
         ? '<span class="orderNeon">' + orderSafe + '</span>'
         : '';
 
+      const fechas = calcularFechasEntrega();
+      const textoFechas = fechas.fechaMin === fechas.fechaMax 
+        ? fechas.fechaMin 
+        : fechas.fechaMin + ' al ' + fechas.fechaMax;
+
       const messageHtml =
         'Pedido confirmado ' +
         (orderHtml ? orderHtml + '. ' : '') +
-        'Tu pedido ya está en proceso. Tiempo estimado de entrega: <b>6 a 7 días hábiles</b>.<br>' +
+        'Tu pedido ya está en proceso. Tiempo estimado de entrega: <b>' + textoFechas + '</b> (6 a 7 días hábiles).<br>' +
         '¡Gracias por comprar y confiar en nosotros!';
 
       msgPreview.innerHTML = messageHtml;
