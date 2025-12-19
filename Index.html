@@ -192,6 +192,32 @@
       .row2{ grid-template-columns:1fr; }
     }
 
+    /* Botón volver - siempre visible */
+    .btnBack{
+      position:fixed;
+      top:16px;
+      left:16px;
+      z-index:1000;
+      border:1px solid var(--border);
+      background: rgba(40,40,40,.95);
+      color: var(--text);
+      padding:10px 16px;
+      border-radius:14px;
+      cursor:pointer;
+      font-weight:700;
+      font-size:13px;
+      transition:.15s;
+      box-shadow: 0 4px 12px rgba(0,0,0,.4);
+      backdrop-filter: blur(10px);
+    }
+    .btnBack:hover{ 
+      background: rgba(60,60,60,.95); 
+      transform: translateY(-1px); 
+    }
+    .btnBack:active{ 
+      transform: translateY(0px); 
+    }
+
     /* Modo captura: oculta toolbar + editor y deja solo la nota */
     body.capture{
       padding:0;
@@ -217,6 +243,7 @@
 </head>
 
 <body>
+  <button class="btnBack" id="btnBack" style="display:none;">← Volver</button>
   <div class="app">
     <div class="toolbar">
       <div style="display:flex; gap:10px; flex-wrap:wrap;">
@@ -257,9 +284,8 @@
           </div>
 
           <div>
-            <label>Texto (editable)</label>
-            <textarea id="msgInput">Tu pedido ya está en proceso. Tiempo estimado de entrega: 6 a 7 días hábiles.
-¡Gracias por comprar y confiar en nosotros!</textarea>
+            <label>¿Qué pidió el cliente? (texto editable)</label>
+            <textarea id="msgInput" placeholder="Ej: Juego de balatas delanteras para Chevy"></textarea>
           </div>
 
           <div class="row2">
@@ -285,17 +311,43 @@
     }
 
     function sync(){
-      storeNamePreview.textContent = (storeInput.value || '').trim() || 'Tu Tienda';
-      titlePreview.textContent = (titleInput.value || '').trim() || 'Pedido confirmado';
+      const storeValue = (storeInput.value || '').trim();
+      const titleValue = (titleInput.value || '').trim();
+      const orderRaw = msgInput.value || '';
 
-      const raw = msgInput.value || '';
-      // Resalta automáticamente "6 a 7 días hábiles" si está presente
-      const safe = escapeHtml(raw).replaceAll('\n','<br>');
-      const highlighted = safe.replaceAll(
-        '6 a 7 días hábiles',
-        '<b>6 a 7 días hábiles</b>'
-      );
-      msgPreview.innerHTML = highlighted;
+      storeNamePreview.textContent = storeValue || 'Tu Tienda';
+      titlePreview.textContent = titleValue || 'Pedido confirmado';
+
+      const orderSafe = escapeHtml(orderRaw).replaceAll('\n','<br>');
+
+      const messageHtml =
+        'Pedido confirmado ' +
+        (orderSafe ? orderSafe + '. ' : '') +
+        'Tu pedido ya está en proceso. Tiempo estimado de entrega: <b>6 a 7 días hábiles</b>.<br>' +
+        '¡Gracias por comprar y confiar en nosotros!';
+
+      msgPreview.innerHTML = messageHtml;
+
+      // #region agent log
+      fetch('http://127.0.0.1:7242/ingest/f6b003a6-1307-400c-9bab-1a2f90e919d1',{
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({
+          sessionId:'debug-session',
+          runId:'pre-fix',
+          hypothesisId:'H1',
+          location:'Index.html:sync',
+          message:'sync state',
+          data:{
+            store: storeNamePreview.textContent,
+            title: titlePreview.textContent,
+            orderRaw,
+            messagePreview: messageHtml
+          },
+          timestamp:Date.now()
+        })
+      }).catch(()=>{});
+      // #endregion
     }
 
     [storeInput, titleInput, msgInput].forEach(el => el.addEventListener('input', sync));
@@ -303,19 +355,47 @@
 
     // Modo captura
     const toggleCapture = document.getElementById('toggleCapture');
+    const btnBack = document.getElementById('btnBack');
+    
+    function updateCaptureMode() {
+      const isCapture = document.body.classList.contains('capture');
+      btnBack.style.display = isCapture ? 'block' : 'none';
+      toggleCapture.textContent = isCapture ? 'Salir captura' : 'Modo captura';
+    }
+    
     toggleCapture.addEventListener('click', () => {
       document.body.classList.toggle('capture');
-      toggleCapture.textContent = document.body.classList.contains('capture')
-        ? 'Salir captura'
-        : 'Modo captura';
+      updateCaptureMode();
+    });
+    
+    // Botón volver - sale del modo captura
+    btnBack.addEventListener('click', () => {
+      document.body.classList.remove('capture');
+      updateCaptureMode();
     });
 
     // Restablecer
     document.getElementById('resetBtn').addEventListener('click', () => {
       storeInput.value = 'Tu Tienda';
       titleInput.value = 'Pedido confirmado';
-      msgInput.value = 'Tu pedido ya está en proceso. Tiempo estimado de entrega: 6 a 7 días hábiles.\n¡Gracias por comprar y confiar en nosotros!';
+      msgInput.value = '';
       sync();
+
+      // #region agent log
+      fetch('http://127.0.0.1:7242/ingest/f6b003a6-1307-400c-9bab-1a2f90e919d1',{
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({
+          sessionId:'debug-session',
+          runId:'pre-fix',
+          hypothesisId:'H2',
+          location:'Index.html:resetBtn',
+          message:'reset clicked',
+          data:{},
+          timestamp:Date.now()
+        })
+      }).catch(()=>{});
+      // #endregion
     });
 
     // Copiar
