@@ -85,8 +85,8 @@
     }
 
     .logoWrap{
-      width:200px;
-      height:90px;
+      width:clamp(160px, 25vw, 200px);
+      height:clamp(70px, 12vw, 90px);
       border-radius:18px;
       margin:0 auto 14px;
       overflow:hidden;
@@ -140,6 +140,18 @@
 
     .msg b{ font-weight:900; }
 
+    /* Efecto neon blanco para el pedido del cliente */
+    .orderNeon{
+      color: #ffffff;
+      text-shadow: 
+        0 0 5px rgba(255,255,255,0.8),
+        0 0 10px rgba(255,255,255,0.6),
+        0 0 15px rgba(255,255,255,0.4),
+        0 0 20px rgba(255,255,255,0.3),
+        0 0 30px rgba(255,255,255,0.2);
+      font-weight: 800;
+    }
+
     /* Panel de edición */
     .editor{
       border-top:1px solid var(--border);
@@ -188,8 +200,80 @@
       line-height:1.35;
     }
 
+    /* Responsive: Tablets */
+    @media (max-width:768px){
+      body{
+        padding:12px;
+      }
+      .note{
+        padding:24px 16px 20px;
+      }
+      .logoWrap{
+        width:clamp(140px, 30vw, 180px);
+        height:clamp(60px, 14vw, 80px);
+        padding:8px;
+      }
+      .editor{
+        padding:12px;
+      }
+    }
+
+    /* Responsive: Móviles */
     @media (max-width:520px){
-      .row2{ grid-template-columns:1fr; }
+      body{
+        padding:10px;
+      }
+      .note{
+        padding:20px 14px 18px;
+      }
+      .logoWrap{
+        width:140px;
+        height:60px;
+        padding:6px;
+        margin-bottom:12px;
+      }
+      .storeName{
+        font-size:16px;
+        margin-bottom:12px;
+      }
+      .title{
+        margin-bottom:14px;
+      }
+      .editor{
+        padding:10px;
+      }
+      .row2{ 
+        grid-template-columns:1fr; 
+      }
+      .btn{
+        padding:12px 14px;
+        font-size:14px;
+      }
+      .pill{
+        font-size:11px;
+        padding:6px 8px;
+      }
+      .btnBack{
+        top:12px;
+        left:12px;
+        padding:8px 12px;
+        font-size:12px;
+      }
+    }
+
+    /* Responsive: Móviles pequeños */
+    @media (max-width:360px){
+      .logoWrap{
+        width:120px;
+        height:50px;
+      }
+      .note{
+        padding:18px 12px 16px;
+      }
+      .toolbar{
+        gap:8px;
+        margin-bottom:10px;
+      }
     }
 
     /* Botón volver - siempre visible */
@@ -272,17 +356,6 @@
 
       <div class="editor">
         <div class="grid">
-          <div class="row2">
-            <div>
-              <label>Nombre de la tienda</label>
-              <input id="storeInput" value="Tu Tienda" />
-            </div>
-            <div>
-              <label>Título</label>
-              <input id="titleInput" value="Pedido confirmado" />
-            </div>
-          </div>
-
           <div>
             <label>¿Qué pidió el cliente? (texto editable)</label>
             <textarea id="msgInput" placeholder="Ej: Juego de balatas delanteras para Chevy"></textarea>
@@ -302,8 +375,6 @@
     const titlePreview = document.getElementById('titlePreview');
     const msgPreview = document.getElementById('msgPreview');
 
-    const storeInput = document.getElementById('storeInput');
-    const titleInput = document.getElementById('titleInput');
     const msgInput = document.getElementById('msgInput');
 
     function escapeHtml(s){
@@ -311,46 +382,24 @@
     }
 
     function sync(){
-      const storeValue = (storeInput.value || '').trim();
-      const titleValue = (titleInput.value || '').trim();
       const orderRaw = msgInput.value || '';
-
-      storeNamePreview.textContent = storeValue || 'Tu Tienda';
-      titlePreview.textContent = titleValue || 'Pedido confirmado';
 
       const orderSafe = escapeHtml(orderRaw).replaceAll('\n','<br>');
 
+      const orderHtml = orderSafe 
+        ? '<span class="orderNeon">' + orderSafe + '</span>'
+        : '';
+
       const messageHtml =
         'Pedido confirmado ' +
-        (orderSafe ? orderSafe + '. ' : '') +
+        (orderHtml ? orderHtml + '. ' : '') +
         'Tu pedido ya está en proceso. Tiempo estimado de entrega: <b>6 a 7 días hábiles</b>.<br>' +
         '¡Gracias por comprar y confiar en nosotros!';
 
       msgPreview.innerHTML = messageHtml;
-
-      // #region agent log
-      fetch('http://127.0.0.1:7242/ingest/f6b003a6-1307-400c-9bab-1a2f90e919d1',{
-        method:'POST',
-        headers:{'Content-Type':'application/json'},
-        body:JSON.stringify({
-          sessionId:'debug-session',
-          runId:'pre-fix',
-          hypothesisId:'H1',
-          location:'Index.html:sync',
-          message:'sync state',
-          data:{
-            store: storeNamePreview.textContent,
-            title: titlePreview.textContent,
-            orderRaw,
-            messagePreview: messageHtml
-          },
-          timestamp:Date.now()
-        })
-      }).catch(()=>{});
-      // #endregion
     }
 
-    [storeInput, titleInput, msgInput].forEach(el => el.addEventListener('input', sync));
+    msgInput.addEventListener('input', sync);
     sync();
 
     // Modo captura
@@ -376,26 +425,8 @@
 
     // Restablecer
     document.getElementById('resetBtn').addEventListener('click', () => {
-      storeInput.value = 'Tu Tienda';
-      titleInput.value = 'Pedido confirmado';
       msgInput.value = '';
       sync();
-
-      // #region agent log
-      fetch('http://127.0.0.1:7242/ingest/f6b003a6-1307-400c-9bab-1a2f90e919d1',{
-        method:'POST',
-        headers:{'Content-Type':'application/json'},
-        body:JSON.stringify({
-          sessionId:'debug-session',
-          runId:'pre-fix',
-          hypothesisId:'H2',
-          location:'Index.html:resetBtn',
-          message:'reset clicked',
-          data:{},
-          timestamp:Date.now()
-        })
-      }).catch(()=>{});
-      // #endregion
     });
 
     // Copiar
